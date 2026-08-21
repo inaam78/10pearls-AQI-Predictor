@@ -27,7 +27,7 @@ jobs:
 
     - name: Run Model Training Pipeline
       run: |
-        python train_models.py
+        python src/train_models.py
 
     - name: Verify Model Artifact Exists
       run: |
