@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:  # Allows manual triggering from the GitHub Actions tab
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily model training at midnight UTC (matches project requirements)
 
 jobs:
   train-model:
