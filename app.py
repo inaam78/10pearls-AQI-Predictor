@@ -231,7 +231,7 @@ st.markdown(
 )
 
 # ============================================================
-# NAVIGATION TABS
+# NAVIGATION TABS (This is what got deleted previously)
 # ============================================================
 tab_forecast, tab_health, tab_performance, tab_export = st.tabs([
     "📈 72-Hour Forecast", 
@@ -250,26 +250,27 @@ with tab_forecast:
         day_cols = st.columns(3)
         for i, (start_h, end_h, d_label) in enumerate([(1, 24, "Day 1 (0-24h)"), (25, 48, "Day 2 (25-48h)"), (49, 72, "Day 3 (49-72h)")]):
             sub_df = prediction_df[(prediction_df["forecast_hour"] >= start_h) & (prediction_df["forecast_hour"] <= end_h)]
-            avg_pm = sub_df["predicted_pm2_5"].mean()
-            max_pm = sub_df["predicted_pm2_5"].max()
-            avg_aqi_val = pm25_to_aqi(avg_pm)
-            max_aqi_val = pm25_to_aqi(max_pm)
-            d_cat, d_color, d_txt, _ = get_aqi_details(avg_aqi_val)
-            
-            with day_cols[i]:
-                st.markdown(
-                    f"""
-                    <div class="metric-card">
-                        <h4 style="margin: 0;">{d_label}</h4>
-                        <div class="aqi-badge" style="background-color: {d_color}; color: {d_txt}; font-size: 18px; margin: 10px 0;">
-                            Avg AQI {avg_aqi_val:.0f}
+            if not sub_df.empty:
+                avg_pm = sub_df["predicted_pm2_5"].mean()
+                max_pm = sub_df["predicted_pm2_5"].max()
+                avg_aqi_val = pm25_to_aqi(avg_pm)
+                max_aqi_val = pm25_to_aqi(max_pm)
+                d_cat, d_color, d_txt, _ = get_aqi_details(avg_aqi_val)
+                
+                with day_cols[i]:
+                    st.markdown(
+                        f"""
+                        <div class="metric-card">
+                            <h4 style="margin: 0;">{d_label}</h4>
+                            <div class="aqi-badge" style="background-color: {d_color}; color: {d_txt}; font-size: 18px; margin: 10px 0;">
+                                Avg AQI {avg_aqi_val:.0f}
+                            </div>
+                            <p style="margin:0; font-size: 13px;"><b>Avg PM2.5:</b> {avg_pm:.1f} µg/m³</p>
+                            <p style="margin:0; font-size: 13px;"><b>Peak AQI:</b> {max_aqi_val:.0f} ({max_pm:.1f} µg/m³)</p>
                         </div>
-                        <p style="margin:0; font-size: 13px;"><b>Avg PM2.5:</b> {avg_pm:.1f} µg/m³</p>
-                        <p style="margin:0; font-size: 13px;"><b>Peak AQI:</b> {max_aqi_val:.0f} ({max_pm:.1f} µg/m³)</p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                        """,
+                        unsafe_allow_html=True
+                    )
 
         st.markdown("---")
         day_sel = st.selectbox("Select Day to Inspect", ["Day 1 — Next 24 Hours", "Day 2 — 25–48 Hours", "Day 3 — 49–72 Hours"])
@@ -285,26 +286,28 @@ with tab_forecast:
         selected_h = st.slider("Select Forecast Horizon (Hours ahead)", 1, 72, 1)
         active_df = prediction_df.copy()
         
-        selected_row = prediction_df[prediction_df["forecast_hour"] == selected_h].iloc[0]
-        spm = float(selected_row["predicted_pm2_5"])
-        saqi = pm25_to_aqi(spm)
-        scat, scolor, stxt, _ = get_aqi_details(saqi)
-        
-        hc1, hc2, hc3 = st.columns(3)
-        hc1.metric("Selected Hour Forecast", f"{spm:.1f} µg/m³")
-        hc2.metric("Calculated AQI", f"{saqi:.0f}")
-        with hc3:
-            st.markdown(
-                f"""
-                <div style="text-align: center;">
-                    <span style="font-size: 12px; color: gray;">AQI Level</span><br>
-                    <div class="aqi-badge" style="background-color: {scolor}; color: {stxt};">
-                        {scat}
+        selected_row_df = prediction_df[prediction_df["forecast_hour"] == selected_h]
+        if not selected_row_df.empty:
+            selected_row = selected_row_df.iloc[0]
+            spm = float(selected_row["predicted_pm2_5"])
+            saqi = pm25_to_aqi(spm)
+            scat, scolor, stxt, _ = get_aqi_details(saqi)
+            
+            hc1, hc2, hc3 = st.columns(3)
+            hc1.metric("Selected Hour Forecast", f"{spm:.1f} µg/m³")
+            hc2.metric("Calculated AQI", f"{saqi:.0f}")
+            with hc3:
+                st.markdown(
+                    f"""
+                    <div style="text-align: center;">
+                        <span style="font-size: 12px; color: gray;">AQI Level</span><br>
+                        <div class="aqi-badge" style="background-color: {scolor}; color: {stxt};">
+                            {scat}
+                        </div>
                     </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                    """,
+                    unsafe_allow_html=True
+                )
 
     # Plotly Forecast Chart
     fig = go.Figure()
@@ -371,7 +374,7 @@ with tab_health:
     
     st.markdown(
         """
-        Air pollution—specifically fine particulate matter ($\text{PM}_{2.5}$)—poses serious health risks. 
+        Air pollution—specifically fine particulate matter (PM2.5)—poses serious health risks. 
         Follow these health guidelines based on predicted pollution levels:
         """
     )
@@ -416,8 +419,8 @@ with tab_health:
 with tab_performance:
     st.markdown("### 🤖 Model Metrics & Evaluation")
     
-    mae_val = 23.50
-    rmse_val = 32.86
+    mae_val = 28.56
+    rmse_val = 40.54
     r2_val = 0.4681
     
     if performance_df is not None:
@@ -433,6 +436,38 @@ with tab_performance:
     m4.metric("Forecast Horizon", "72 Hours")
 
     st.markdown("---")
+    
+    # --- MODEL INTERPRETABILITY (FEATURE IMPORTANCE) ---
+    st.markdown("#### 🔍 Model Interpretability & Feature Importance")
+    st.caption("Visualizing the most influential drivers of AQI variations in Lahore based on Random Forest feature extraction.")
+    
+    if model is not None and hasattr(model, "feature_importances_") and hasattr(model, "feature_names_in_"):
+        importances = model.feature_importances_
+        features = model.feature_names_in_
+        
+        # Create a DataFrame and sort by importance
+        imp_df = pd.DataFrame({"Feature": features, "Importance": importances})
+        imp_df = imp_df.sort_values(by="Importance", ascending=True).tail(10) # Show top 10
+        
+        fig_imp = go.Figure(go.Bar(
+            x=imp_df["Importance"],
+            y=imp_df["Feature"],
+            orientation='h',
+            marker=dict(color="#8F3F97", opacity=0.8) # Matches your custom styling
+        ))
+        
+        fig_imp.update_layout(
+            height=350,
+            margin=dict(l=20, r=20, t=30, b=20),
+            xaxis_title="Relative Importance Weight",
+            yaxis_title="",
+            plot_bgcolor="rgba(0,0,0,0)"
+        )
+        st.plotly_chart(fig_imp, use_container_width=True)
+    else:
+        st.info("Feature importance extraction is currently unavailable for this model artifact.")
+
+    st.markdown("---")
     st.markdown("#### ⚙️ Pipeline & Feature Specification")
     st.markdown(
         """
@@ -441,6 +476,7 @@ with tab_performance:
         - **Key Input Features:**
           - *Meteorological:* Temperature (2m), Relative Humidity, Precipitation, Surface Pressure, Wind Speed & Direction (10m).
           - *Temporal:* Hour of day, Day of month, Day of week, Month, Is Weekend indicator.
+          - *Atmospheric Persistence:* **1h, 3h, 24h lag features and 6-hour rolling averages** for smog accumulation tracking.
         - **Update Frequency:** Daily automated pipeline via GitHub Actions & Feature Store.
         """
     )
