@@ -1,8 +1,10 @@
-#  10Pearls AQI Predictor
+# 🌫️ 10Pearls AQI Predictor
 
 **Machine learning system forecasting Lahore's Air Quality Index (AQI) 72 hours ahead**
 
 *Built during the 10Pearls Internship Program*
+
+🔗 **Live Demo:** [10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-yuhtmzw5jvwujxp3hb7gjs.streamlit.app/)
 
 ---
 
@@ -29,6 +31,8 @@
 **10Pearls AQI Predictor** is an end-to-end forecasting system that predicts fine particulate matter (PM2.5) and the corresponding Air Quality Index for **Lahore, Pakistan**, up to **72 hours in advance**. It implements the full MLOps lifecycle — automated feature engineering, a versioned feature store, model training and evaluation, and an interactive Streamlit dashboard — on a serverless-friendly, cost-free stack.
 
 Where the original project brief suggested specific example tools, this implementation deliberately substitutes several of them with open-source, self-hostable alternatives — most notably **Feast** in place of Hopsworks/Vertex AI, and **Open-Meteo** in place of AQICN/OpenWeather (see [Tech Stack & Alternative Tool Choices](#-tech-stack--alternative-tool-choices) for the rationale).
+
+You can try the live, hosted dashboard here: **[10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-yuhtmzw5jvwujxp3hb7gjs.streamlit.app/)** — no installation required.
 
 ---
 
@@ -146,33 +150,38 @@ Feature definitions live in `feature_definitions.py`:
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Try it instantly (no setup)
+The dashboard is live at **[10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-yuhtmzw5jvwujxp3hb7gjs.streamlit.app/)** — skip straight there if you just want to see the forecast.
+
+### Run it locally
+
+**Prerequisites**
 - Python 3.11+
 - Git
 
-### 1. Clone the repository
+**1. Clone the repository**
 ```bash
 git clone https://github.com/inaam78/10pearls-AQI-Predictor.git
 cd 10pearls-AQI-Predictor
 ```
 
-### 2. Set up a virtual environment (recommended)
+**2. Set up a virtual environment (recommended)**
 ```bash
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 ```
 
-### 3. Install dependencies
+**3. Install dependencies**
 ```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 pip install streamlit plotly feast
 ```
 
-### 4. Generate features, train the model, and populate results
+**4. Generate features, train the model, and populate results**
 Run the pipeline scripts under `src/` to populate the Feast feature store, `models/`, and `results/` before first launch.
 
-### 5. Launch the dashboard
+**5. Launch the dashboard**
 ```bash
 streamlit run app.py
 ```
