@@ -1,0 +1,33 @@
+name: Hourly Feature Pipeline
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Runs at minute 0 of every hour
+  workflow_dispatch:      # Allows manual triggering
+
+jobs:
+  run-hourly-features:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Ensure Output Directories Exist
+      run: |
+        mkdir -p data feature_store results outputs
+
+    - name: Run Feature Engineering Script
+      run: |
+        python src/feature_engineering.py
