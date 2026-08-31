@@ -23,6 +23,7 @@ MODEL_PATH = "models/random_forest_72h.pkl"
 SCALER_PATH = "models/scaler.pkl"
 PREDICTION_PATH = "outputs/72h_predictions.csv"
 PERFORMANCE_PATH = "results/models/test_performance.csv"
+DATA_PATH = "data/processed/lahore_features.csv"
 
 AQI_CATEGORIES = [
     (0, 50, "Good", "#00E400", "#000000", "Air quality is satisfactory; air pollution poses little or no risk."),
@@ -107,13 +108,18 @@ def get_aqi_details(aqi):
     return "Hazardous", "#7E0023", "#FFFFFF", "Health emergency condition."
 
 # ============================================================
-# LOAD PREDICTIONS DIRECTLY FROM OUTPUTS CSV
+# LOAD ARTIFACTS & PREDICTIONS
 # ============================================================
+@st.cache_resource
+def load_artifacts():
+    model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
+    scaler = joblib.load(SCALER_PATH) if os.path.exists(SCALER_PATH) else None
+    return model, scaler
+
 @st.cache_data
 def load_predictions():
     if os.path.exists(PREDICTION_PATH):
         df = pd.read_csv(PREDICTION_PATH)
-        # Ensure timestamp column exists and is parsed correctly
         if "timestamp" not in df.columns:
             start_time = datetime.now()
             df["timestamp"] = [start_time + timedelta(hours=i) for i in range(len(df))]
@@ -123,13 +129,13 @@ def load_predictions():
         if "forecast_hour" not in df.columns:
             df["forecast_hour"] = range(1, len(df) + 1)
             
-        # Map predicted column name safely
         if "predicted_pm25" in df.columns and "predicted_pm2_5" not in df.columns:
             df["predicted_pm2_5"] = df["predicted_pm25"]
             
         return df
     return None
 
+model, scaler = load_artifacts()
 prediction_df = load_predictions()
 
 if prediction_df is None or "predicted_pm2_5" not in prediction_df.columns:
@@ -174,7 +180,7 @@ st.markdown(f'<div class="advisory-box" style="border-left-color: {color};"><str
 # NAVIGATION TABS
 # ============================================================
 tab_forecast, tab_health, tab_performance, tab_export = st.tabs([
-    "📈 72-Hour Forecast", "🏥 Health & Action Advisories", "🤖 Model Performance", "📥 Raw Data & Export"
+    "📈 72-Hour Forecast", "🏥 Health & Action Advisories", "🤖 Model Performance & SHAP", "📥 Raw Data & Export"
 ])
 
 with tab_forecast:
@@ -239,13 +245,56 @@ with tab_health:
     st.info(impact_msg)
 
 with tab_performance:
-    st.markdown("### 🤖 Model Metrics")
-    m1, m2, m3 = st.columns(3)
-    m1.metric("MAE", "28.56 µg/m³")
-    m2.metric("RMSE", "40.54 µg/m³")
+    st.markdown("### 🤖 Model Metrics & Evaluation")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Mean Absolute Error (MAE)", "28.56 µg/m³")
+    m2.metric("Root Mean Squared Error", "40.54 µg/m³")
     m3.metric("R² Score", "0.4681")
+    m4.metric("Forecast Horizon", "72 Hours")
+
+    st.markdown("---")
+    st.markdown("#### 🔬 SHAP Explainability & Feature Impact")
+    st.caption("SHAP (SHapley Additive exPlanations) values quantify the exact positive or negative impact each weather feature has on predicted PM2.5 concentrations.")
+
+    try:
+        import shap
+        import matplotlib.pyplot as plt
+        
+        if os.path.exists(DATA_PATH) and scaler is not None and model is not None:
+            df_feat = pd.read_csv(DATA_PATH).tail(50)
+            feature_cols = [
+                "temperature_2m", "relative_humidity_2m", "precipitation",
+                "surface_pressure", "wind_speed_10m", "wind_direction_10m",
+                "hour", "day", "day_of_week", "month", "year", "is_weekend"
+            ]
+            X_sample = scaler.transform(df_feat[feature_cols])
+            explainer = shap.LinearExplainer(model, X_sample)
+            shap_vals = explainer(X_sample)
+            
+            fig, ax = plt.subplots(figsize=(8, 4))
+            shap.summary_plot(shap_vals, X_sample, feature_names=feature_cols, show=False)
+            st.pyplot(fig)
+            plt.clf()
+        else:
+            st.info("Historical dataset or model artifacts missing for live SHAP summary plot generation.")
+    except Exception as e:
+        st.warning(f"SHAP explainer notice: {e}")
 
 with tab_export:
-    st.markdown("### 📥 Download Predictions")
+    st.markdown("### 📥 Download Predictions Data")
     st.dataframe(prediction_df[["forecast_hour", "timestamp", "predicted_pm2_5", "AQI"]], use_container_width=True, hide_index=True)
-    st.download_button("⬇️ Download CSV", data=prediction_df.to_csv(index=False), file_name="lahore_aqi_forecast.csv", mime="text/csv")
+    st.download_button(label="⬇️ Download Full 72-Hour Forecast (CSV)", data=prediction_df.to_csv(index=False), file_name="lahore_aqi_forecast.csv", mime="text/csv")
+
+# ============================================================
+# FOOTER
+# ============================================================
+st.markdown(
+    """
+    <div class="footer-container">
+        🌫️ <strong>Lahore AQI Prediction & Monitoring System</strong><br>
+        Machine Learning System • Developed by Muhammad Inam Shahid<br>
+        <em>For academic and demonstration purposes.</em>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
