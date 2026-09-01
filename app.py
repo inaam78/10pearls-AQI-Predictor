@@ -2,7 +2,9 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
+import requests
 import streamlit as st
+import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
@@ -11,7 +13,6 @@ from datetime import datetime, timedelta
 # ============================================================
 st.set_page_config(
     page_title="Lahore AQI Predictor & Air Quality Dashboard",
-    page_icon="🌫️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -39,30 +40,59 @@ AQI_CATEGORIES = [
 st.markdown(
     """
     <style>
-    .main { padding-top: 1rem; }
-    .metric-card {
-        padding: 18px;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    .main { padding-top: 1rem; background-color: #f8f9fa; }
+    
+    .forecast-card {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
         border-radius: 12px;
-        border: 1px solid rgba(128,128,128,0.2);
-        background: rgba(128,128,128,0.05);
+        padding: 24px;
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        margin-bottom: 10px;
     }
-    .aqi-badge {
-        display: inline-block;
-        padding: 6px 16px;
-        border-radius: 20px;
+    
+    .forecast-title {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: #555555;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+    
+    .forecast-value {
+        font-size: 38px;
         font-weight: 700;
-        font-size: 14px;
-        margin-top: 6px;
+        color: #111111;
+        margin-bottom: 16px;
     }
+    
+    .aqi-pill {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        color: #ffffff;
+        width: 100%;
+        text-align: center;
+    }
+
     .advisory-box {
         padding: 16px;
         border-radius: 10px;
         border-left: 6px solid;
         margin-bottom: 20px;
-        background-color: rgba(128,128,128,0.05);
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
+    
     .footer-container {
         text-align: center;
         font-size: 12px;
@@ -106,6 +136,21 @@ def get_aqi_details(aqi):
             return category, color, text_color, impact
     return "Hazardous", "#7E0023", "#FFFFFF", "Health emergency condition."
 
+@st.cache_data(ttl=3600)
+def fetch_live_lahore_aqi():
+    try:
+        url = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=31.5497&longitude=74.3436&current=pm2_5"
+        res = requests.get(url, timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            pm25_val = data.get("current", {}).get("pm2_5", None)
+            if pm25_val is not None:
+                aqi_val = pm25_to_aqi(pm25_val)
+                return pm25_val, aqi_val
+    except Exception:
+        pass
+    return None, None
+
 # ============================================================
 # LOAD ARTIFACTS & PREDICTIONS
 # ============================================================
@@ -138,7 +183,7 @@ model, scaler = load_artifacts()
 prediction_df = load_predictions()
 
 if prediction_df is None or "predicted_pm2_5" not in prediction_df.columns:
-    st.error("⚠️ Predictions file not found at outputs/72h_predictions.csv. Please run python src/predict.py first.")
+    st.error("[Warning] Predictions file not found at outputs/72h_predictions.csv. Please run python src/predict.py first.")
     st.stop()
 
 prediction_df["AQI"] = prediction_df["predicted_pm2_5"].apply(pm25_to_aqi)
@@ -146,45 +191,116 @@ prediction_df["AQI"] = prediction_df["predicted_pm2_5"].apply(pm25_to_aqi)
 # ============================================================
 # SIDEBAR CONTROLS
 # ============================================================
-st.sidebar.markdown("## ⚙️ Dashboard Controls")
+st.sidebar.markdown("## Dashboard Controls")
 st.sidebar.markdown("---")
-city = st.sidebar.selectbox("🏙️ Select City", ["Lahore"])
-forecast_mode = st.sidebar.radio("📊 Forecast View Mode", ["Hourly View", "Daily Overview"])
-show_thresholds = st.sidebar.checkbox("Show AQI Severity Bands on Chart", value=True)
-show_uncertainty = st.sidebar.checkbox("Show Confidence Bounds (if present)", value=True)
+city = st.sidebar.selectbox("Select City", ["Lahore"])
+forecast_mode = st.sidebar.radio("Forecast View Mode", ["Hourly View", "Daily Overview"])
+
+st.sidebar.markdown("---")
+st.sidebar.caption("Tip: Toggle between views to analyze hourly spikes vs. daily trends.")
 
 # ============================================================
-# HEADER & CURRENT CONDITIONS
+# HEADER & LIVE AQI ACTION BUTTON
 # ============================================================
-st.markdown("# 🌫️ Lahore Air Quality Index (AQI) Forecast")
-st.caption("AI-Powered 72-Hour PM2.5 Concentration & AQI Predictive Dashboard")
+st.markdown("# Air Quality Forecast")
+st.caption(f"{city}, Punjab, Pakistan — Machine-learning forecast for the next 72 hours.")
 
-latest_row = prediction_df.iloc[0]
-latest_pm25 = float(latest_row["predicted_pm2_5"])
-latest_aqi = pm25_to_aqi(latest_pm25)
-cat, color, txt_color, impact_msg = get_aqi_details(latest_aqi)
-latest_time = latest_row["timestamp"]
+# Live AQI Button matching reference style
+if st.button("Generate Live AQI Status"):
+    live_pm25, live_aqi = fetch_live_lahore_aqi()
+    if live_aqi is not None:
+        st.session_state["live_pm25"] = live_pm25
+        st.session_state["live_aqi"] = live_aqi
+    else:
+        st.warning("Could not fetch live AQI. Displaying model default.")
 
 st.markdown("---")
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Live Predicted AQI", f"{latest_aqi:.0f}")
-c2.metric("Live PM2.5", f"{latest_pm25:.1f} µg/m³")
-with c3:
-    st.markdown(f'<div style="text-align: center;"><span style="font-size: 12px; color: gray;">Air Quality Category</span><br><div class="aqi-badge" style="background-color: {color}; color: {txt_color};">{cat}</div></div>', unsafe_allow_html=True)
-c4.metric("Location / Time", f"{city}", delta=latest_time.strftime("%b %d, %H:%M PKT") if isinstance(latest_time, pd.Timestamp) else str(latest_time), delta_color="off")
 
-st.markdown(f'<div class="advisory-box" style="border-left-color: {color};"><strong>Health Assessment:</strong> {impact_msg}</div>', unsafe_allow_html=True)
+# Display live AQI Meter box if fetched
+if "live_aqi" in st.session_state:
+    l_aqi = st.session_state["live_aqi"]
+    l_pm25 = st.session_state["live_pm25"]
+    l_cat, l_color, l_txt, l_msg = get_aqi_details(l_aqi)
+    
+    st.markdown("### Live Real-Time Air Quality Status")
+    col_l1, col_l2 = st.columns([1, 2])
+    with col_l1:
+        st.markdown(
+            f"""
+            <div class="forecast-card">
+                <div class="forecast-title">Current Live AQI</div>
+                <div class="forecast-value">{l_aqi:.0f}</div>
+                <div class="aqi-pill" style="background-color: {l_color}; color: {l_txt};">{l_cat}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with col_l2:
+        st.markdown(f'<div class="advisory-box" style="border-left-color: {l_color};"><strong>Live Health Assessment:</strong> {l_msg}</div>', unsafe_allow_html=True)
+        st.info(f"Current Live PM2.5 Concentration: **{l_pm25:.1f} µg/m³** measured in Lahore.")
+    st.markdown("---")
+
+# ============================================================
+# REFERENCE CARDS (24h, 48h, 72h Forecast)
+# ============================================================
+st.markdown("### Forecast")
+
+d1_mean = prediction_df[prediction_df["forecast_hour"] <= 24]["AQI"].mean()
+d2_mean = prediction_df[(prediction_df["forecast_hour"] > 24) & (prediction_df["forecast_hour"] <= 48)]["AQI"].mean()
+d3_mean = prediction_df[(prediction_df["forecast_hour"] > 48) & (prediction_df["forecast_hour"] <= 72)]["AQI"].mean()
+
+cat1, col1, _, _ = get_aqi_details(d1_mean)
+cat2, col2, _, _ = get_aqi_details(d2_mean)
+cat3, col3, _, _ = get_aqi_details(d3_mean)
+
+col_f1, col_f2, col_f3 = st.columns(3)
+
+with col_f1:
+    st.markdown(
+        f"""
+        <div class="forecast-card">
+            <div class="forecast-title">24-Hour Forecast</div>
+            <div class="forecast-value">{d1_mean:.1f}</div>
+            <div class="aqi-pill" style="background-color: {col1};">{cat1}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col_f2:
+    st.markdown(
+        f"""
+        <div class="forecast-card">
+            <div class="forecast-title">48-Hour Forecast</div>
+            <div class="forecast-value">{d2_mean:.1f}</div>
+            <div class="aqi-pill" style="background-color: {col2};">{cat2}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col_f3:
+    st.markdown(
+        f"""
+        <div class="forecast-card">
+            <div class="forecast-title">72-Hour Forecast</div>
+            <div class="forecast-value">{d3_mean:.1f}</div>
+            <div class="aqi-pill" style="background-color: {col3};">{cat3}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # ============================================================
 # NAVIGATION TABS
 # ============================================================
 tab_forecast, tab_health, tab_performance, tab_export = st.tabs([
-    "📈 72-Hour Forecast", "🏥 Health & Action Advisories", "🤖 Model Performance & Importance", "📥 Raw Data & Export"
+    "72-Hour Forecast", "Health & Action Advisories", "Model Performance & Importance", "Raw Data & Export"
 ])
 
 with tab_forecast:
     if forecast_mode == "Daily Overview":
-        st.markdown("### 📅 Daily Summary Breakdown")
+        st.markdown("### Daily Summary Breakdown")
         day_cols = st.columns(3)
         for i, (start_h, end_h, d_label) in enumerate([(1, 24, "Day 1 (0-24h)"), (25, 48, "Day 2 (25-48h)"), (49, 72, "Day 3 (49-72h)")]):
             sub_df = prediction_df[(prediction_df["forecast_hour"] >= start_h) & (prediction_df["forecast_hour"] <= end_h)]
@@ -192,10 +308,9 @@ with tab_forecast:
                 avg_pm = sub_df["predicted_pm2_5"].mean()
                 max_pm = sub_df["predicted_pm2_5"].max()
                 avg_aqi_val = pm25_to_aqi(avg_pm)
-                max_aqi_val = pm25_to_aqi(max_pm)
-                d_cat, d_color, d_txt, _ = get_aqi_details(avg_aqi_val)
+                d_cat, d_color, _, _ = get_aqi_details(avg_aqi_val)
                 with day_cols[i]:
-                    st.markdown(f'<div class="metric-card"><h4 style="margin: 0;">{d_label}</h4><div class="aqi-badge" style="background-color: {d_color}; color: {d_txt}; font-size: 18px; margin: 10px 0;">Avg AQI {avg_aqi_val:.0f}</div><p style="margin:0; font-size: 13px;"><b>Avg PM2.5:</b> {avg_pm:.1f} µg/m³</p><p style="margin:0; font-size: 13px;"><b>Peak AQI:</b> {max_aqi_val:.0f} ({max_pm:.1f} µg/m³)</p></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="forecast-card"><div class="forecast-title">{d_label}</div><div class="forecast-value">{avg_aqi_val:.0f}</div><div class="aqi-pill" style="background-color: {d_color};">{d_cat}</div></div>', unsafe_allow_html=True)
         st.markdown("---")
         day_sel = st.selectbox("Select Day to Inspect", ["Day 1 — Next 24 Hours", "Day 2 — 25–48 Hours", "Day 3 — 49–72 Hours"])
         if "Day 1" in day_sel:
@@ -205,42 +320,41 @@ with tab_forecast:
         else:
             active_df = prediction_df[(prediction_df["forecast_hour"] >= 49) & (prediction_df["forecast_hour"] <= 72)]
     else:
-        st.markdown("### ⏱️ Hourly Forecast Analysis")
-        selected_h = st.slider("Select Forecast Horizon (Hours ahead)", 1, 72, 1)
         active_df = prediction_df.copy()
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=active_df["timestamp"],
-        y=active_df["predicted_pm2_5"],
-        mode="lines+markers",
-        name="Predicted PM2.5",
-        line=dict(color="#1f77b4", width=3),
-        marker=dict(size=6, color="#1f77b4"),
-        hovertemplate="<b>Time:</b> %{x|%b %d, %H:%M}<br><b>PM2.5:</b> %{y:.1f} µg/m³<extra></extra>"
-    ))
+    st.markdown("### Forecast Trend")
+    
+    fig = px.line(
+        active_df,
+        x="timestamp",
+        y="AQI",
+        markers=True
+    )
 
-    if show_thresholds:
-        bands = [
-            (0, 12.0, "rgba(0, 228, 0, 0.08)"), (12.1, 35.4, "rgba(255, 255, 0, 0.08)"),
-            (35.5, 55.4, "rgba(255, 126, 0, 0.08)"), (55.5, 150.4, "rgba(255, 0, 0, 0.08)"),
-            (150.5, 250.4, "rgba(143, 63, 151, 0.08)"), (250.5, 500.0, "rgba(126, 0, 35, 0.08)")
-        ]
-        for y0, y1, b_color in bands:
-            fig.add_hrect(y0=y0, y1=y1, fillcolor=b_color, line_width=0, layer="below")
+    fig.update_traces(
+        line=dict(color="black", width=1.5),
+        marker=dict(size=6, color="black"),
+        hovertemplate="<b>Forecast Time:</b> %{x|%H:%M<br>%b %d, %Y}<br><b>AQI:</b> %{y:.1f}<extra></extra>"
+    )
 
     fig.update_layout(
-        title=f"{city} — PM2.5 72-Hour Forecast Trajectory",
-        xaxis_title="Timestamp",
-        yaxis_title="PM2.5 Concentration (µg/m³)",
-        height=480,
-        margin=dict(l=20, r=20, t=50, b=20),
-        hovermode="x unified"
+        xaxis_title="Forecast Time",
+        yaxis_title="AQI",
+        height=420,
+        margin=dict(l=40, r=20, t=20, b=40),
+        hovermode="x unified",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        font=dict(family="Inter", color="black")
     )
+    
+    fig.update_xaxes(showgrid=False, zeroline=False, linecolor="black", tickformat="%H:%M<br>%b %d, %Y")
+    fig.update_yaxes(showgrid=True, gridcolor="rgba(200,200,200,0.4)", zeroline=False, linecolor="black")
+
     st.plotly_chart(fig, use_container_width=True)
 
 with tab_health:
-    st.markdown("### 🏥 Health & Protection Guidelines")
+    st.markdown("### Health & Protection Guidelines")
     st.markdown(
         """
         Air pollution—specifically fine particulate matter (PM2.5)—poses serious health risks. 
@@ -251,26 +365,26 @@ with tab_health:
     col_a, col_b = st.columns(2)
     
     with col_a:
-        st.markdown("#### 🏃 Outdoor Activities")
-        if latest_aqi <= 50:
-            st.success("✅ **Safe for Outdoors:** Great time for outdoor exercise and activities.")
-        elif latest_aqi <= 100:
-            st.info("🟡 **Moderate Risk:** Sensitive individuals should consider reducing prolonged outdoor exertion.")
-        elif latest_aqi <= 150:
-            st.warning("🟠 **Caution:** Children, elderly, and individuals with asthma should limit outdoor exposure.")
+        st.markdown("#### Outdoor Activities")
+        if d1_mean <= 50:
+            st.success("Safe for Outdoors: Great time for outdoor exercise and activities.")
+        elif d1_mean <= 100:
+            st.info("Moderate Risk: Sensitive individuals should consider reducing prolonged outdoor exertion.")
+        elif d1_mean <= 150:
+            st.warning("Caution: Children, elderly, and individuals with asthma should limit outdoor exposure.")
         else:
-            st.error("🚨 **Avoid Outdoors:** Avoid strenuous outdoor activities. Wear an N95/KN95 mask if going outside is unavoidable.")
+            st.error("Avoid Outdoors: Avoid strenuous outdoor activities. Wear an N95/KN95 mask if going outside is unavoidable.")
             
     with col_b:
-        st.markdown("#### 🏡 Indoor Precautions")
-        if latest_aqi > 150:
-            st.error("🔒 Keep windows closed. Run indoor HEPA air purifiers if available.")
-            st.error("🚗 Recirculate air in vehicles rather than venting in outside air.")
+        st.markdown("#### Indoor Precautions")
+        if d1_mean > 150:
+            st.error("Keep windows closed. Run indoor HEPA air purifiers if available.")
+            st.error("Recirculate air in vehicles rather than venting in outside air.")
         else:
-            st.success("🍃 Indoor air quality remains acceptable. Maintain standard ventilation.")
+            st.success("Indoor air quality remains acceptable. Maintain standard ventilation.")
 
     st.markdown("---")
-    st.markdown("#### 📊 Standard EPA AQI Breakdowns Reference")
+    st.markdown("#### Standard EPA AQI Breakdowns Reference")
     
     ref_df = pd.DataFrame([
         {"AQI Range": "0 - 50", "Category": "Good", "PM2.5 (µg/m³)": "0.0 - 12.0", "Recommended Action": "Enjoy normal outdoor activities."},
@@ -282,9 +396,8 @@ with tab_health:
     ])
     st.table(ref_df)
 
-
 with tab_performance:
-    st.markdown("### 🤖 Model Metrics & Evaluation")
+    st.markdown("### Model Metrics & Evaluation")
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Mean Absolute Error (MAE)", "28.56 µg/m³")
     m2.metric("Root Mean Squared Error", "40.54 µg/m³")
@@ -292,7 +405,7 @@ with tab_performance:
     m4.metric("Forecast Horizon", "72 Hours")
 
     st.markdown("---")
-    st.markdown("#### 🔬 Feature Importance & Model Interpretability")
+    st.markdown("#### Feature Importance & Model Interpretability")
     st.caption("Relative weight of meteorological and temporal features driving Lahore's pollution predictions.")
 
     features = [
@@ -315,14 +428,15 @@ with tab_performance:
         margin=dict(l=20, r=20, t=30, b=20),
         xaxis_title="Relative Importance Weight",
         yaxis_title="",
-        plot_bgcolor="rgba(0,0,0,0)"
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter")
     )
     st.plotly_chart(fig_imp, use_container_width=True)
 
 with tab_export:
-    st.markdown("### 📥 Download Predictions Data")
+    st.markdown("### Download Predictions Data")
     st.dataframe(prediction_df[["forecast_hour", "timestamp", "predicted_pm2_5", "AQI"]], use_container_width=True, hide_index=True)
-    st.download_button(label="⬇️ Download Full 72-Hour Forecast (CSV)", data=prediction_df.to_csv(index=False), file_name="lahore_aqi_forecast.csv", mime="text/csv")
+    st.download_button(label="Download Full 72-Hour Forecast (CSV)", data=prediction_df.to_csv(index=False), file_name="lahore_aqi_forecast.csv", mime="text/csv")
 
 # ============================================================
 # FOOTER
@@ -330,7 +444,7 @@ with tab_export:
 st.markdown(
     """
     <div class="footer-container">
-        🌫️ <strong>Lahore AQI Prediction & Monitoring System</strong><br>
+        <strong>Lahore AQI Prediction & Monitoring System</strong><br>
         Machine Learning System • Developed by Muhammad Inam Shahid<br>
         <em>For academic and demonstration purposes.</em>
     </div>
