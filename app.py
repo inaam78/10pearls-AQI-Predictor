@@ -241,7 +241,47 @@ with tab_forecast:
 
 with tab_health:
     st.markdown("### 🏥 Health & Protection Guidelines")
-    st.info(impact_msg)
+    st.markdown(
+        """
+        Air pollution—specifically fine particulate matter (PM2.5)—poses serious health risks. 
+        Follow these health guidelines based on predicted pollution levels:
+        """
+    )
+    
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        st.markdown("#### 🏃 Outdoor Activities")
+        if latest_aqi <= 50:
+            st.success("✅ **Safe for Outdoors:** Great time for outdoor exercise and activities.")
+        elif latest_aqi <= 100:
+            st.info("🟡 **Moderate Risk:** Sensitive individuals should consider reducing prolonged outdoor exertion.")
+        elif latest_aqi <= 150:
+            st.warning("🟠 **Caution:** Children, elderly, and individuals with asthma should limit outdoor exposure.")
+        else:
+            st.error("🚨 **Avoid Outdoors:** Avoid strenuous outdoor activities. Wear an N95/KN95 mask if going outside is unavoidable.")
+            
+    with col_b:
+        st.markdown("#### 🏡 Indoor Precautions")
+        if latest_aqi > 150:
+            st.error("🔒 Keep windows closed. Run indoor HEPA air purifiers if available.")
+            st.error("🚗 Recirculate air in vehicles rather than venting in outside air.")
+        else:
+            st.success("🍃 Indoor air quality remains acceptable. Maintain standard ventilation.")
+
+    st.markdown("---")
+    st.markdown("#### 📊 Standard EPA AQI Breakdowns Reference")
+    
+    ref_df = pd.DataFrame([
+        {"AQI Range": "0 - 50", "Category": "Good", "PM2.5 (µg/m³)": "0.0 - 12.0", "Recommended Action": "Enjoy normal outdoor activities."},
+        {"AQI Range": "51 - 100", "Category": "Moderate", "PM2.5 (µg/m³)": "12.1 - 35.4", "Recommended Action": "Unusually sensitive people should reduce exertion."},
+        {"AQI Range": "101 - 150", "Category": "Unhealthy for Sensitive", "PM2.5 (µg/m³)": "35.5 - 55.4", "Recommended Action": "Sensitive groups should limit prolonged outdoor effort."},
+        {"AQI Range": "151 - 200", "Category": "Unhealthy", "PM2.5 (µg/m³)": "55.5 - 150.4", "Recommended Action": "Everyone should reduce outdoor exertion."},
+        {"AQI Range": "201 - 300", "Category": "Very Unhealthy", "PM2.5 (µg/m³)": "150.5 - 250.4", "Recommended Action": "Avoid all outdoor physical activity."},
+        {"AQI Range": "301+", "Category": "Hazardous", "PM2.5 (µg/m³)": "250.5+", "Recommended Action": "Remain indoors; keep activity levels low."}
+    ])
+    st.table(ref_df)
+
 
 with tab_performance:
     st.markdown("### 🤖 Model Metrics & Evaluation")
@@ -255,7 +295,6 @@ with tab_performance:
     st.markdown("#### 🔬 Feature Importance & Model Interpretability")
     st.caption("Relative weight of meteorological and temporal features driving Lahore's pollution predictions.")
 
-    # Render a lightweight Plotly feature importance chart instead of heavy SHAP
     features = [
         "temperature_2m", "relative_humidity_2m", "precipitation",
         "surface_pressure", "wind_speed_10m", "wind_direction_10m",
