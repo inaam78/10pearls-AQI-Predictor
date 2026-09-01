@@ -1,4 +1,4 @@
-# 🌫️ 10Pearls AQI Predictor
+#  10Pearls AQI Predictor
 
 **Machine learning system forecasting Lahore's Air Quality Index (AQI) 72 hours ahead**
 
@@ -8,7 +8,7 @@
 
 ---
 
-## 📋 Table of Contents
+##  Table of Contents
 
 - [Overview](#-overview)
 - [Key Features](#-key-features)
@@ -40,17 +40,17 @@ You can try the live, hosted dashboard here: **[10pearls-aqi-predictor.streamlit
 
 | Capability | Description |
 |---|---|
-| 🔮 **72-hour forecast** | Hourly or Day 1 / Day 2 / Day 3 summary views |
-| 🩺 **EPA-standard AQI conversion** | PM2.5 → AQI mapped via official US EPA breakpoints |
-| 🚦 **Health advisories** | Outdoor activity and indoor precaution guidance that adapts to the live predicted AQI |
-| 📈 **Model diagnostics** | MAE, RMSE, R², and feature-importance visualization for interpretability |
-| 📥 **Data export** | One-click CSV download of the full 72-hour forecast |
-| 🗄️ **Feast feature store** | Versioned entities and feature views shared between training and inference |
-| ⚙️ **Automation-ready** | GitHub Actions workflows for pipeline orchestration |
+|  **72-hour forecast** | Hourly or Day 1 / Day 2 / Day 3 summary views |
+|  **EPA-standard AQI conversion** | PM2.5 → AQI mapped via official US EPA breakpoints |
+|  **Health advisories** | Outdoor activity and indoor precaution guidance that adapts to the live predicted AQI |
+|  **Model diagnostics** | MAE, RMSE, R², and feature-importance visualization for interpretability |
+|  **Data export** | One-click CSV download of the full 72-hour forecast |
+|  **Feast feature store** | Versioned entities and feature views shared between training and inference |
+|  **Automation-ready** | GitHub Actions workflows for pipeline orchestration |
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```mermaid
 flowchart LR
@@ -75,7 +75,7 @@ flowchart LR
 
 ---
 
-## 🛠️ Tech Stack & Alternative Tool Choices
+##  Tech Stack & Alternative Tool Choices
 
 The project brief suggested example tools for each pipeline stage while explicitly encouraging alternatives. Here's what was actually used and why:
 
@@ -127,7 +127,7 @@ The project brief suggested example tools for each pipeline stage while explicit
 
 ---
 
-## 🗄️ Feature Store (Feast) Configuration
+##  Feature Store (Feast) Configuration
 
 Feature definitions live in `feature_definitions.py`:
 
@@ -148,7 +148,7 @@ Feature definitions live in `feature_definitions.py`:
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Try it instantly (no setup)
 The dashboard is live at **[10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-4utqksqtzdsjktrupqhqyh.streamlit.app/)** — skip straight there if you just want to see the forecast.
@@ -189,7 +189,7 @@ Open the local URL Streamlit prints (typically `http://localhost:8501`).
 
 ---
 
-## 📊 Model & Evaluation
+##  Model & Evaluation
 
 Baseline performance for the current model (72-hour horizon):
 
@@ -203,7 +203,7 @@ An R² of ~0.47 indicates a usable baseline rather than a highly tuned model, wi
 
 ---
 
-## 🩺 AQI Reference Scale
+##  AQI Reference Scale
 
 | AQI Range | Category | PM2.5 (µg/m³) |
 |---|---|---|
@@ -216,7 +216,7 @@ An R² of ~0.47 indicates a usable baseline rather than a highly tuned model, wi
 
 ---
 
-## 🗺️ Roadmap & Known Limitations
+##  Roadmap & Known Limitations
 
 - [ ] Benchmark Random Forest against Ridge Regression and a deep learning baseline (e.g. LSTM)
 - [ ] Add a dedicated SHAP/LIME analysis for per-prediction explainability
@@ -239,7 +239,7 @@ Contributions, issues, and feature requests are welcome:
 
 ---
 
-## 📄 License
+##  License
 
 No license file is currently included in this repository. Consider adding an [MIT](https://choosealicense.com/licenses/mit/) or other open-source license if you intend for others to reuse this code.
 
