@@ -205,7 +205,6 @@ st.sidebar.caption("Tip: Toggle between views to analyze hourly spikes vs. daily
 st.markdown("# Air Quality Forecast")
 st.caption(f"{city}, Punjab, Pakistan — Machine-learning forecast for the next 72 hours.")
 
-# Live AQI Button matching reference style
 if st.button("Generate Live AQI Status"):
     live_pm25, live_aqi = fetch_live_lahore_aqi()
     if live_aqi is not None:
@@ -216,7 +215,6 @@ if st.button("Generate Live AQI Status"):
 
 st.markdown("---")
 
-# Display live AQI Meter box if fetched
 if "live_aqi" in st.session_state:
     l_aqi = st.session_state["live_aqi"]
     l_pm25 = st.session_state["live_pm25"]
@@ -320,6 +318,32 @@ with tab_forecast:
         else:
             active_df = prediction_df[(prediction_df["forecast_hour"] >= 49) & (prediction_df["forecast_hour"] <= 72)]
     else:
+        st.markdown("### Hourly Specific Forecast Selector")
+        selected_hour_ahead = st.slider("Select Forecast Horizon (Hours Ahead)", 1, 72, 1)
+        
+        # Filter prediction for the exact selected hour
+        selected_row = prediction_df[prediction_df["forecast_hour"] == selected_hour_ahead].iloc[0]
+        sel_aqi = selected_row["AQI"]
+        sel_pm25 = selected_row["predicted_pm2_5"]
+        sel_time = selected_row["timestamp"]
+        s_cat, s_col, s_txt, s_msg = get_aqi_details(sel_aqi)
+        
+        st.markdown(
+            f"""
+            <div class="forecast-card" style="border-left: 6px solid {s_col}; text-align: left; padding: 20px;">
+                <h4 style="margin: 0; color: #333;">Hour +{selected_hour_ahead} Forecast Details</h4>
+                <p style="margin: 5px 0 15px 0; color: #666; font-size: 14px;">Target Timestamp: <b>{sel_time.strftime('%b %d, %Y - %H:%M %p')}</b></p>
+                <div style="display: flex; gap: 30px; align-items: center;">
+                    <div><span style="font-size: 13px; color: gray;">Predicted AQI</span><br><b style="font-size: 28px;">{sel_aqi:.0f}</b></div>
+                    <div><span style="font-size: 13px; color: gray;">Predicted PM2.5</span><br><b style="font-size: 22px;">{sel_pm25:.1f} µg/m³</b></div>
+                    <div><span style="font-size: 13px; color: gray;">Category</span><br><span class="aqi-badge" style="background-color: {s_col}; color: {s_txt}; font-size: 14px; padding: 4px 12px; border-radius: 6px;">{s_cat}</span></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        st.markdown(f'<div class="advisory-box" style="border-left-color: {s_col};"><strong>Advisory for Hour +{selected_hour_ahead}:</strong> {s_msg}</div>', unsafe_allow_html=True)
+        st.markdown("---")
         active_df = prediction_df.copy()
 
     st.markdown("### Forecast Trend")
