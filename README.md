@@ -36,7 +36,7 @@ You can try the live, hosted dashboard here: **[10pearls-aqi-predictor.streamlit
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 | Capability | Description |
 |---|---|
