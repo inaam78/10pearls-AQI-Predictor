@@ -4,7 +4,7 @@
 
 *Built during the 10Pearls Internship Program*
 
-🔗 **Live Demo:** [10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-yuhtmzw5jvwujxp3hb7gjs.streamlit.app/)
+🔗 **Live Demo:** [10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-4utqksqtzdsjktrupqhqyh.streamlit.app/)
 
 ---
 
@@ -32,7 +32,7 @@
 
 Where the original project brief suggested specific example tools, this implementation deliberately substitutes several of them with open-source, self-hostable alternatives — most notably **Feast** in place of Hopsworks/Vertex AI, and **Open-Meteo** in place of AQICN/OpenWeather (see [Tech Stack & Alternative Tool Choices](#-tech-stack--alternative-tool-choices) for the rationale).
 
-You can try the live, hosted dashboard here: **[10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-yuhtmzw5jvwujxp3hb7gjs.streamlit.app/)** — no installation required.
+You can try the live, hosted dashboard here: **[10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-4utqksqtzdsjktrupqhqyh.streamlit.app/)** — no installation required.
 
 ---
 
@@ -151,7 +151,7 @@ Feature definitions live in `feature_definitions.py`:
 ## 🚀 Getting Started
 
 ### Try it instantly (no setup)
-The dashboard is live at **[10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-yuhtmzw5jvwujxp3hb7gjs.streamlit.app/)** — skip straight there if you just want to see the forecast.
+The dashboard is live at **[10pearls-aqi-predictor.streamlit.app](https://10pearls-aqi-predictor-4utqksqtzdsjktrupqhqyh.streamlit.app/)** — skip straight there if you just want to see the forecast.
 
 ### Run it locally
 
